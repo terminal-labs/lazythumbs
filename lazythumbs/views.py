@@ -113,6 +113,8 @@ class LazyThumbRenderer(View):
                 params = {
                     'format': get_format(rendered_path),
                     'quality': 80,
+                    'optimize': True, # ???? Do we need optimize? Why wans't it here before?
+                    'progressive': True,
                 }
 
                 if params['format'] == "JPEG" and pil_img.mode == 'P':
