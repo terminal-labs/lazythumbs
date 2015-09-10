@@ -49,7 +49,7 @@ class LazyThumbRenderer(View):
         ]
 
 
-    def get(self, request, action, geometry, source_path):
+    def get(self, request, action, geometry, source_path, quality='q80'):
         """
         Perform action routing and handle sanitizing url input. Handles caching the path to a rendered image to
         django.cache and saves the new image on the filesystem. 404s are cached to
@@ -61,6 +61,17 @@ class LazyThumbRenderer(View):
         :param source_path: the fs path to the image to be manipulated
         :returns: an HttpResponse with an image/{format} content_type
         """
+        try: 
+            quality = int(quality[1:])
+        except (ValueError, TypeError), e:
+            logger.info('corrupted quality "%s" for action "%s"' % (quality, action))
+            return self.four_oh_four()            
+
+        try:
+            assert 0 < quality <= 100
+        except AssertionError, e:
+            logger.info('corrupted quality "%s" for action "%s"' % (quality, action))
+            return self.four_oh_four()
 
         # reject naughty paths and actions
         if source_path.startswith('/'):
@@ -84,7 +95,7 @@ class LazyThumbRenderer(View):
 
         rendered_path = request.path[1:]
 
-        cache_key = self.cache_key(source_path, action, width, height)
+        cache_key = self.cache_key(source_path, action, width, height, quality)
         was_404 = cache.get(cache_key)
 
         if was_404 == 1:
@@ -434,7 +445,7 @@ class LazyThumbRenderer(View):
         """
         return Image.open(os.path.join(settings.MEDIA_ROOT, img_path))
 
-    def cache_key(self, img_path, action, width, height):
+    def cache_key(self, img_path, action, width, height, quality):
         """
         Compute a unique cache key for an image operation. Takes width, height,
         fs path, and desired action into account.
@@ -444,10 +455,10 @@ class LazyThumbRenderer(View):
         :param width: integer width in pixels
         :param height: integer height in pixels
         """
-        hashed = self.hash_(img_path, action, width, height)
+        hashed = self.hash_(img_path, action, width, height, quality)
         return 'lazythumbs:%s' % hashed
 
-    def hash_(self, img_path, action, width, height):
+    def hash_(self, img_path, action, width, height, quality):
         """
         Generate an md5 hash for an image operation. Takes width, height,
         fs path, and desired action into account.
@@ -457,7 +468,7 @@ class LazyThumbRenderer(View):
         :param width: integer width in pixels
         :param height: integer height in pixels
         """
-        hashed = md5('%s:%s:%s:%s' % (img_path, action, width, height))
+        hashed = md5('%s:%s:%s:%s:%s' % (img_path, action, width, height, quality))
         return hashed.hexdigest()
 
     def two_hundred(self, img_data, img_format):
