@@ -15,6 +15,7 @@ from django.http import HttpResponse
 from django.views.generic.base import View
 from PIL import Image
 
+from lazythumbs import DEFAULT_QUALITY_FACTOR, DEFAULT_OPTIMIZE_FLAG, DEFAULT_PROGRESSIVE_FLAG
 from lazythumbs.util import geometry_parse, get_format
 
 logger = logging.getLogger('lazythumbs')
@@ -112,9 +113,9 @@ class LazyThumbRenderer(View):
                 # TODO we need a better way of choosing options based on size and format
                 params = {
                     'format': get_format(rendered_path),
-                    'quality': 80,
-                    'optimize': True, # ???? Do we need optimize? Why wans't it here before?
-                    'progressive': True,
+                    'quality': DEFAULT_QUALITY_FACTOR,
+                    'optimize': DEFAULT_OPTIMIZE_FLAG,
+                    'progressive': DEFAULT_PROGRESSIVE_FLAG,
                 }
 
                 if params['format'] == "JPEG" and pil_img.mode == 'P':
