@@ -1,4 +1,4 @@
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 
 
 # NOTE: These are the default paramaters used for processing iamges with PIL.
