@@ -41,6 +41,7 @@ class LazyThumbRenderer(View):
     image transformations simply by subclassing this view and adding "action_"
     methods that return raw image data as a string.
     """
+    default_quality_url_param = 'q{0}'.format(DEFAULT_QUALITY_FACTOR)
     def __init__(self):
         self.fs = FileSystemStorage()
         self.allowed_actions = [a.__name__
@@ -49,7 +50,7 @@ class LazyThumbRenderer(View):
         ]
 
 
-    def get(self, request, action, geometry, source_path, quality='q80'):
+    def get(self, request, action, geometry, source_path, quality=default_quality_url_param):
         """
         Perform action routing and handle sanitizing url input. Handles caching the path to a rendered image to
         django.cache and saves the new image on the filesystem. 404s are cached to
@@ -59,8 +60,10 @@ class LazyThumbRenderer(View):
         :param action: some action, eg thumbnail or resize
         :param geometry: a string of either '\dx\d' or just '\d'
         :param source_path: the fs path to the image to be manipulated
+        :param quality: a strint of 'q\d'
         :returns: an HttpResponse with an image/{format} content_type
         """
+        # sanitize quality param
         try: 
             quality = int(quality[1:])
         except (ValueError, TypeError), e:
@@ -124,7 +127,7 @@ class LazyThumbRenderer(View):
                 # TODO we need a better way of choosing options based on size and format
                 params = {
                     'format': get_format(rendered_path),
-                    'quality': DEFAULT_QUALITY_FACTOR,
+                    'quality': quality,
                     'optimize': DEFAULT_OPTIMIZE_FLAG,
                     'progressive': DEFAULT_PROGRESSIVE_FLAG,
                 }
