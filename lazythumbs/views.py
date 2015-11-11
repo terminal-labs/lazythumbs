@@ -64,15 +64,13 @@ class LazyThumbRenderer(View):
         :returns: an HttpResponse with an image/{format} content_type
         """
         # sanitize quality param
-        try: 
+        try:
             quality = int(quality[1:])
         except (ValueError, TypeError), e:
             logger.info('corrupted quality "%s" for action "%s"' % (quality, action))
-            return self.four_oh_four()            
+            return self.four_oh_four()
 
-        try:
-            assert 0 < quality <= 100
-        except AssertionError, e:
+        if not 0 < quality <= 100:
             logger.info('corrupted quality "%s" for action "%s"' % (quality, action))
             return self.four_oh_four()
 
