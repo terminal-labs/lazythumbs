@@ -22,6 +22,8 @@ logger = logging.getLogger('lazythumbs')
 
 MATTE_BACKGROUND_COLOR = getattr(settings, 'LAZYTHUMBS_MATTE_BACKGROUND_COLOR', (0, 0, 0))
 
+DEFAULT_QUALITY_URL_PARAM = 'q{0}'.format(DEFAULT_QUALITY_FACTOR)
+
 def action(fun):
     """
     Decorator used to denote an instance method as an action: a function
@@ -41,7 +43,6 @@ class LazyThumbRenderer(View):
     image transformations simply by subclassing this view and adding "action_"
     methods that return raw image data as a string.
     """
-    default_quality_url_param = 'q{0}'.format(DEFAULT_QUALITY_FACTOR)
     def __init__(self):
         self.fs = FileSystemStorage()
         self.allowed_actions = [a.__name__
@@ -50,7 +51,7 @@ class LazyThumbRenderer(View):
         ]
 
 
-    def get(self, request, action, geometry, source_path, quality=default_quality_url_param):
+    def get(self, request, action, geometry, source_path, quality=DEFAULT_QUALITY_URL_PARAM):
         """
         Perform action routing and handle sanitizing url input. Handles caching the path to a rendered image to
         django.cache and saves the new image on the filesystem. 404s are cached to
@@ -60,18 +61,18 @@ class LazyThumbRenderer(View):
         :param action: some action, eg thumbnail or resize
         :param geometry: a string of either '\dx\d' or just '\d'
         :param source_path: the fs path to the image to be manipulated
-        :param quality: a strint of 'q\d'
+        :param quality: a string of 'q\d'
         :returns: an HttpResponse with an image/{format} content_type
         """
         # sanitize quality param
         try:
-            quality = int(quality[1:])
-        except (ValueError, TypeError), e:
-            logger.info('corrupted quality "%s" for action "%s"' % (quality, action))
+            quality = int(quality.lstrip('q'))
+        except (ValueError, AttributeError), e:
+            logger.info('corrupted quality "%s" for action "%s"' % quality, action)
             return self.four_oh_four()
 
         if not 0 < quality <= 100:
-            logger.info('corrupted quality "%s" for action "%s"' % (quality, action))
+            logger.info('corrupted quality "%s" for action "%s"' % quality, action)
             return self.four_oh_four()
 
         # reject naughty paths and actions
@@ -446,31 +447,14 @@ class LazyThumbRenderer(View):
         """
         return Image.open(os.path.join(settings.MEDIA_ROOT, img_path))
 
-    def cache_key(self, img_path, action, width, height, quality):
+    def cache_key(self, *args):
         """
         Compute a unique cache key for an image operation. Takes width, height,
-        fs path, and desired action into account.
-
-        :param img_path: fs path to a source image
-        :param action: string representing image manipulation to occur
-        :param width: integer width in pixels
-        :param height: integer height in pixels
+        fs path, desired action, and quality into account.
         """
-        hashed = self.hash_(img_path, action, width, height, quality)
+        key_string = u':'.join(map(unicode, args))
+        hashed = md5(key_string).hexdigest()
         return 'lazythumbs:%s' % hashed
-
-    def hash_(self, img_path, action, width, height, quality):
-        """
-        Generate an md5 hash for an image operation. Takes width, height,
-        fs path, and desired action into account.
-
-        :param img_path: fs path to a source image
-        :param action: string representing image manipulation to occur
-        :param width: integer width in pixels
-        :param height: integer height in pixels
-        """
-        hashed = md5('%s:%s:%s:%s:%s' % (img_path, action, width, height, quality))
-        return hashed.hexdigest()
 
     def two_hundred(self, img_data, img_format):
         """
