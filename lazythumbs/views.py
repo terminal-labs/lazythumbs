@@ -68,28 +68,29 @@ class LazyThumbRenderer(View):
         try:
             quality = int(quality.lstrip('q'))
         except (ValueError, AttributeError), e:
-            logger.info('corrupted quality "%s" for action "%s"' % quality, action)
+            logger.info('corrupted quality "%s" for action "%s"', quality, action)
+            logger.info('Bad url quality parameter:\n%s', e)
             return self.four_oh_four()
 
         if not 0 < quality <= 100:
-            logger.info('corrupted quality "%s" for action "%s"' % quality, action)
+            logger.info('corrupted quality "%s" for action "%s"', quality, action)
             return self.four_oh_four()
 
         # reject naughty paths and actions
         if source_path.startswith('/'):
-            logger.info("%s: blocked bad path" % source_path)
+            logger.info("%s: blocked bad path", source_path)
             return self.four_oh_four()
         if re.match('\.\./', source_path):
-            logger.info("%s: blocked bad path" % source_path)
+            logger.info("%s: blocked bad path", source_path)
             return self.four_oh_four()
         if action not in self.allowed_actions:
-            logger.info("%s: bad action requested: %s" % (source_path, action))
+            logger.info("%s: bad action requested: %s", source_path, action)
             return self.four_oh_four()
 
         try:
             width, height = geometry_parse(action, geometry, ValueError)
         except ValueError, e:
-            logger.info('corrupted geometry "%s" for action "%s"' % (geometry, action))
+            logger.info('corrupted geometry "%s" for action "%s"', geometry, action)
             return self.four_oh_four()
 
         width = int(width) if width is not None else None
@@ -139,9 +140,9 @@ class LazyThumbRenderer(View):
                 try:
                     pil_img.save(buf, **params)
                 except IOError as e:
-                    logger.exception("pil_img.save(%r)" % params)
+                    logger.exception("pil_img.save(%r)", params)
                     # TODO reevaluate this except when we make options smarter
-                    logger.info("Failed to create new image %s . Trying without options" % rendered_path)
+                    logger.info("Failed to create new image %s . Trying without options", rendered_path)
                     pil_img.save(buf, format=img_format)
                 raw_data = buf.getvalue()
                 buf.close()
@@ -154,16 +155,16 @@ class LazyThumbRenderer(View):
                         try:
                             raw_data = self.fs.open(rendered_path).read()
                         except Exception as e:
-                            logger.exception("Unable to read image file, returning 404: %s" % e)
+                            logger.exception("Unable to read image file, returning 404: %s", e)
                             return self.four_oh_four()
                     else:
-                        logger.exception("Saving converted image: %s" % e)
+                        logger.exception("Saving converted image: %s", e)
                         raise
 
             except (IOError, SuspiciousOperation, ValueError), e:
                 # we've now failed to find a rendered path as well as the
                 # original source path. this is a 404.
-                logger.info('404: %s' % e)
+                logger.info('404: %s', e)
                 cache.set(cache_key, 1, settings.LAZYTHUMBS_404_CACHE_TIMEOUT)
                 return self.four_oh_four()
 
