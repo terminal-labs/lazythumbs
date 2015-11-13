@@ -455,7 +455,7 @@ class LazyThumbRenderer(View):
         """
         key_string = u':'.join(map(unicode, args))
         hashed = md5(key_string).hexdigest()
-        return 'lazythumbs:%s' % hashed
+        return 'lazythumbs:{0}'.format(hashed)
 
     def two_hundred(self, img_data, img_format):
         """
