@@ -533,4 +533,4 @@ class TestUrlMatching(TestCase):
         for path1, path2 in test_paths(self.routes_to_test):
             routes_tested += 1
             self.assertEqual(path1, path2)
-        self.assertEqual(routes_tested, 4)
+        self.assertEqual(routes_tested, 8)
