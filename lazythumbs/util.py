@@ -106,7 +106,7 @@ def quack(thing, properties, levels=[], default=None):
     return default
 
 
-def compute_img(thing, action, geometry, options=None):
+def compute_img(thing, action, geometry, options=None, quality=None):
     """ generate a src url, width and height tuple for given object or url"""
     if options is None:
         options = {}
@@ -182,7 +182,7 @@ def compute_img(thing, action, geometry, options=None):
             return exit(url, s_w, s_h)
 
     geometry = build_geometry(action, width, height)
-    src = _construct_lt_img_url(url_prefix, action, geometry, url)
+    src = _construct_lt_img_url(url_prefix, action, geometry, url, quality)
 
     if getattr(settings, 'LAZYTHUMBS_DUMMY', False):
         src = 'http://placekitten.com/%s/%s' % (width, height)
@@ -270,5 +270,8 @@ def _get_url_img_obj_from_thing(thing):
     return (url, url_prefix, img_object)
 
 
-def _construct_lt_img_url(prefix, action, geometry, url):
-    return '/'.join([prefix.rstrip('/'), 'lt_cache', action, geometry, url])
+def _construct_lt_img_url(prefix, action, geometry, url, quality=None):
+    if quality:
+        return '/'.join([prefix.rstrip('/'), 'lt_cache', action, geometry, quality, url])
+    else:
+        return '/'.join([prefix.rstrip('/'), 'lt_cache', action, geometry, url])

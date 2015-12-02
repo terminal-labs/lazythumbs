@@ -39,8 +39,11 @@ class LazythumbNode(Node):
             raw_kwargs = bits[4:-2]
             for kwarg in raw_kwargs:
                 kwarg_name, kwarg_value = kwarg.split('=')
-                self.kwargs[kwarg_name] = Variable(kwarg_value)
-        except ValueError:
+                if kwarg_name == 'quality':
+                    self.quality = kwarg_value
+                else:
+                    self.kwargs[kwarg_name] = Variable(kwarg_value)
+        except ValueError, AssertionError:
             raise tse(self.usage)
 
         self.as_var = as_var
@@ -66,7 +69,8 @@ class LazythumbNode(Node):
             options[k] = v.resolve(context)
 
         context.push()
-        context[self.as_var] = compute_img(thing, action, geometry, options)
+        self.quality = 'q%s' % self.quality
+        context[self.as_var] = compute_img(thing, action, geometry, options, self.quality)
         output = self.nodelist.render(context)
         context.pop()
         return output
