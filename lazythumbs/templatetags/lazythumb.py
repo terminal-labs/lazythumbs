@@ -41,10 +41,10 @@ class LazythumbNode(Node):
             for kwarg in raw_kwargs:
                 kwarg_name, kwarg_value = kwarg.split('=')
                 if kwarg_name == 'quality':
-                    self.quality = kwarg_value
                     try:
+                        self.quality = int(kwarg_value)
                         assert 0 < self.quality <= 100
-                    except AssertionError:
+                    except (ValueError, AssertionError):
                         raise tse(self.quality_usage)
                 else:
                     self.kwargs[kwarg_name] = Variable(kwarg_value)
