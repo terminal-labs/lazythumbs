@@ -74,7 +74,10 @@ class LazythumbNode(Node):
             options[k] = v.resolve(context)
 
         context.push()
-        self.quality = 'q{0}'.format(self.quality)
+        try:
+            self.quality = 'q{0}'.format(self.quality)
+        except AttributeError:
+            self.quality = None
         context[self.as_var] = compute_img(thing, action, geometry, options, self.quality)
         output = self.nodelist.render(context)
         context.pop()
