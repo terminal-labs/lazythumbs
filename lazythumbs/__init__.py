@@ -5,7 +5,11 @@ logger = logging.getLogger('lazythumbs')
 #       We will try to get them from django settings, and if that fails we can use these
 #       fallback values.
 
-from django.conf import settings
+try:
+    from django.conf import settings
+except ImportError:
+    ## NOTE: Use fallbacks
+    settings = type(object())
 
 fallback_quality_factor = 80
 fallback_optimize_flag = True
