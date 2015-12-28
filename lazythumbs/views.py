@@ -15,7 +15,7 @@ from django.http import HttpResponse
 from django.views.generic.base import View
 from PIL import Image
 
-from lazythumbs import DEFAULT_QUALITY_FACTOR, DEFAULT_OPTIMIZE_FLAG, DEFAULT_PROGRESSIVE_FLAG
+from lazythumbs.settings import DEFAULT_QUALITY_FACTOR, DEFAULT_OPTIMIZE_FLAG, DEFAULT_PROGRESSIVE_FLAG
 from lazythumbs.util import geometry_parse, get_format
 
 logger = logging.getLogger('lazythumbs')
