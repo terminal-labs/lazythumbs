@@ -271,6 +271,13 @@ def _get_url_img_obj_from_thing(thing):
 
 
 def _construct_lt_img_url(prefix, action, geometry, url, quality=None):
+    try:
+        quality = int(quality)
+        assert 0 < quality <= 100
+    except (TypeError, ValueError, AssertionError):
+        logger.debug('Invalid quality value: %s in _construct_lt_img_url.', quality)
+        quality = False
+
     if quality:
         return '/'.join([prefix.rstrip('/'), 'lt_cache', action, geometry, quality, url])
     else:
