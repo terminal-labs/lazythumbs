@@ -8,12 +8,10 @@ except ImportError:
     ## NOTE: Use fallbacks
     settings = type(object())
 
-fallback_quality_factor = 80
+fallback_quality_factor = 60
 fallback_optimize_flag = True
 fallback_progressive_flag = True
 
 DEFAULT_QUALITY_FACTOR = getattr(settings, 'LAZYTHUMBS_QUALITY_FACTOR', fallback_quality_factor)
 DEFAULT_OPTIMIZE_FLAG = getattr(settings, 'LAZYTHUMBS_OPTIMIZE_FLAG', fallback_optimize_flag)
 DEFAULT_PROGRESSIVE_FLAG = getattr(settings, 'LAZYTHUMBS_PROGRESSIVE_FLAG', fallback_progressive_flag)
-
-print "DEFAULT_QUALITY_FACTOR: ", DEFAULT_QUALITY_FACTOR
