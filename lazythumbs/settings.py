@@ -6,7 +6,7 @@ try:
     from django.conf import settings
 except ImportError:
     ## NOTE: Use fallbacks
-    settings = type(object())
+    settings = None
 
 fallback_quality_factor = 60
 fallback_optimize_flag = True
