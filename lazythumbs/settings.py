@@ -8,7 +8,7 @@ except ImportError:
     ## NOTE: Use fallbacks
     settings = None
 
-fallback_quality_factor = 60
+fallback_quality_factor = 80
 fallback_optimize_flag = True
 fallback_progressive_flag = True
 
