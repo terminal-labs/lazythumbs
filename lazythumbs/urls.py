@@ -7,7 +7,24 @@ from lazythumbs.views import LazyThumbRenderer
 
 urlpatterns = patterns('',
     # we'll cleanse the liberal .+ in the view.
-    url(r'lt_cache/(\w+)/(\d+/\d+|\d+)/(.+)$', LazyThumbRenderer.as_view(), name='lt_slash_sep'),
-    url(r'lt_cache/(\w+)/(\d+x\d+)/(.+)$', LazyThumbRenderer.as_view(), name='lt_x_sep'),
-    url(r'lt_cache/(\w+)/(x/\d+)/(.+)$', LazyThumbRenderer.as_view(), name='lt_x_width'),
+    url(r'lt_cache/(?P<action>\w+)/(?P<geometry>\d+/\d+|\d+)/(?P<quality>q\d+)/(?P<source_path>.+)$',
+        LazyThumbRenderer.as_view(),
+        name='lt_slash_sep_w_quality'),
+    url(r'lt_cache/(?P<action>\w+)/(?P<geometry>\d+/\d+|\d+)/(?P<source_path>.+)$',
+        LazyThumbRenderer.as_view(),
+        name='lt_slash_sep'),
+
+    url(r'lt_cache/(?P<action>\w+)/(?P<geometry>\d+x\d+)/(?P<quality>q\d+)/(?P<source_path>.+)$',
+        LazyThumbRenderer.as_view(),
+        name='lt_x_sep_w_quality'),
+    url(r'lt_cache/(?P<action>\w+)/(?P<geometry>\d+x\d+)/(?P<source_path>.+)$',
+        LazyThumbRenderer.as_view(),
+        name='lt_x_sep'),
+
+    url(r'lt_cache/(?P<action>\w+)/(?P<geometry>x/\d+)/(?P<quality>q\d+)/(?P<source_path>.+)$',
+        LazyThumbRenderer.as_view(),
+        name='lt_x_width_w_quality'),
+    url(r'lt_cache/(?P<action>\w+)/(?P<geometry>x/\d+)/(?P<source_path>.+)$',
+        LazyThumbRenderer.as_view(),
+        name='lt_x_width'),
 )

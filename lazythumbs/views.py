@@ -15,11 +15,14 @@ from django.http import HttpResponse
 from django.views.generic.base import View
 from PIL import Image
 
+from lazythumbs.settings import DEFAULT_QUALITY_FACTOR, DEFAULT_OPTIMIZE_FLAG, DEFAULT_PROGRESSIVE_FLAG
 from lazythumbs.util import geometry_parse, get_format
 
 logger = logging.getLogger('lazythumbs')
 
 MATTE_BACKGROUND_COLOR = getattr(settings, 'LAZYTHUMBS_MATTE_BACKGROUND_COLOR', (0, 0, 0))
+
+DEFAULT_QUALITY_URL_PARAM = 'q{0}'.format(DEFAULT_QUALITY_FACTOR)
 
 def action(fun):
     """
@@ -48,7 +51,7 @@ class LazyThumbRenderer(View):
         ]
 
 
-    def get(self, request, action, geometry, source_path):
+    def get(self, request, action, geometry, source_path, quality=DEFAULT_QUALITY_URL_PARAM):
         """
         Perform action routing and handle sanitizing url input. Handles caching the path to a rendered image to
         django.cache and saves the new image on the filesystem. 404s are cached to
@@ -58,24 +61,36 @@ class LazyThumbRenderer(View):
         :param action: some action, eg thumbnail or resize
         :param geometry: a string of either '\dx\d' or just '\d'
         :param source_path: the fs path to the image to be manipulated
+        :param quality: a string of 'q\d'
         :returns: an HttpResponse with an image/{format} content_type
         """
+        # sanitize quality param
+        try:
+            quality = int(quality.lstrip('q'))
+        except (ValueError, AttributeError), e:
+            logger.info('corrupted quality "%s" for action "%s"', quality, action)
+            logger.info('Bad url quality parameter:\n%s', e)
+            return self.four_oh_four()
+
+        if not 0 < quality <= 100:
+            logger.info('corrupted quality "%s" for action "%s"', quality, action)
+            return self.four_oh_four()
 
         # reject naughty paths and actions
         if source_path.startswith('/'):
-            logger.info("%s: blocked bad path" % source_path)
+            logger.info("%s: blocked bad path", source_path)
             return self.four_oh_four()
         if re.match('\.\./', source_path):
-            logger.info("%s: blocked bad path" % source_path)
+            logger.info("%s: blocked bad path", source_path)
             return self.four_oh_four()
         if action not in self.allowed_actions:
-            logger.info("%s: bad action requested: %s" % (source_path, action))
+            logger.info("%s: bad action requested: %s", source_path, action)
             return self.four_oh_four()
 
         try:
             width, height = geometry_parse(action, geometry, ValueError)
         except ValueError, e:
-            logger.info('corrupted geometry "%s" for action "%s"' % (geometry, action))
+            logger.info('corrupted geometry "%s" for action "%s"', geometry, action)
             return self.four_oh_four()
 
         width = int(width) if width is not None else None
@@ -83,7 +98,7 @@ class LazyThumbRenderer(View):
 
         rendered_path = request.path[1:]
 
-        cache_key = self.cache_key(source_path, action, width, height)
+        cache_key = self.cache_key(source_path, action, width, height, quality)
         was_404 = cache.get(cache_key)
 
         if was_404 == 1:
@@ -112,7 +127,9 @@ class LazyThumbRenderer(View):
                 # TODO we need a better way of choosing options based on size and format
                 params = {
                     'format': get_format(rendered_path),
-                    'quality': 80,
+                    'quality': quality,
+                    'optimize': DEFAULT_OPTIMIZE_FLAG,
+                    'progressive': DEFAULT_PROGRESSIVE_FLAG,
                 }
 
                 if params['format'] == "JPEG" and pil_img.mode == 'P':
@@ -123,9 +140,9 @@ class LazyThumbRenderer(View):
                 try:
                     pil_img.save(buf, **params)
                 except IOError as e:
-                    logger.exception("pil_img.save(%r)" % params)
+                    logger.exception("pil_img.save(%r)", params)
                     # TODO reevaluate this except when we make options smarter
-                    logger.info("Failed to create new image %s . Trying without options" % rendered_path)
+                    logger.info("Failed to create new image %s . Trying without options", rendered_path)
                     pil_img.save(buf, format=img_format)
                 raw_data = buf.getvalue()
                 buf.close()
@@ -138,16 +155,16 @@ class LazyThumbRenderer(View):
                         try:
                             raw_data = self.fs.open(rendered_path).read()
                         except Exception as e:
-                            logger.exception("Unable to read image file, returning 404: %s" % e)
+                            logger.exception("Unable to read image file, returning 404: %s", e)
                             return self.four_oh_four()
                     else:
-                        logger.exception("Saving converted image: %s" % e)
+                        logger.exception("Saving converted image: %s", e)
                         raise
 
             except (IOError, SuspiciousOperation, ValueError), e:
                 # we've now failed to find a rendered path as well as the
                 # original source path. this is a 404.
-                logger.info('404: %s' % e)
+                logger.info('404: %s', e)
                 cache.set(cache_key, 1, settings.LAZYTHUMBS_404_CACHE_TIMEOUT)
                 return self.four_oh_four()
 
@@ -431,31 +448,14 @@ class LazyThumbRenderer(View):
         """
         return Image.open(os.path.join(settings.MEDIA_ROOT, img_path))
 
-    def cache_key(self, img_path, action, width, height):
+    def cache_key(self, *args):
         """
         Compute a unique cache key for an image operation. Takes width, height,
-        fs path, and desired action into account.
-
-        :param img_path: fs path to a source image
-        :param action: string representing image manipulation to occur
-        :param width: integer width in pixels
-        :param height: integer height in pixels
+        fs path, desired action, and quality into account.
         """
-        hashed = self.hash_(img_path, action, width, height)
-        return 'lazythumbs:%s' % hashed
-
-    def hash_(self, img_path, action, width, height):
-        """
-        Generate an md5 hash for an image operation. Takes width, height,
-        fs path, and desired action into account.
-
-        :param img_path: fs path to a source image
-        :param action: string representing image manipulation to occur
-        :param width: integer width in pixels
-        :param height: integer height in pixels
-        """
-        hashed = md5('%s:%s:%s:%s' % (img_path, action, width, height))
-        return hashed.hexdigest()
+        key_string = u':'.join(map(unicode, args))
+        hashed = md5(key_string).hexdigest()
+        return 'lazythumbs:{0}'.format(hashed)
 
     def two_hundred(self, img_data, img_format):
         """

@@ -21,6 +21,7 @@ logger = logging.getLogger()
 register.tag('lazythumb', lambda p, t: LazythumbNode(p, t))
 class LazythumbNode(Node):
     usage = 'Expected invocation is {% lazythumb url|ImageFile|Object action geometry [**kwargs] as variable %}'
+    quality_usage = 'Quality must be 0 < quality <= 100. Example: {% lazythumb image action geometry quality=20 as variable %}'
 
     def __init__(self, parser, token):
         # simple alias
@@ -39,7 +40,14 @@ class LazythumbNode(Node):
             raw_kwargs = bits[4:-2]
             for kwarg in raw_kwargs:
                 kwarg_name, kwarg_value = kwarg.split('=')
-                self.kwargs[kwarg_name] = Variable(kwarg_value)
+                if kwarg_name == 'quality':
+                    try:
+                        self.quality = int(kwarg_value)
+                        assert 0 < self.quality <= 100
+                    except (ValueError, AssertionError):
+                        raise tse(self.quality_usage)
+                else:
+                    self.kwargs[kwarg_name] = Variable(kwarg_value)
         except ValueError:
             raise tse(self.usage)
 
@@ -66,7 +74,11 @@ class LazythumbNode(Node):
             options[k] = v.resolve(context)
 
         context.push()
-        context[self.as_var] = compute_img(thing, action, geometry, options)
+        try:
+            self.quality = 'q{0}'.format(self.quality)
+        except AttributeError:
+            self.quality = None
+        context[self.as_var] = compute_img(thing, action, geometry, options, self.quality)
         output = self.nodelist.render(context)
         context.pop()
         return output

@@ -515,10 +515,14 @@ class TestUrlMatching(TestCase):
 
     def setUp(self):
         self.routes_to_test = (
-            dict(url_path='/lt/lt_cache/resize/5/p/i.jpg', pattern_name='lt_slash_sep'),
-            dict(url_path='/lt/lt_cache/resize/5/5/p/i.jpg', pattern_name='lt_slash_sep'),
-            dict(url_path='/lt/lt_cache/resize/5x5/p/i.jpg', pattern_name='lt_x_sep'),
-            dict(url_path='/lt/lt_cache/resize/x/5/p/i.jpg', pattern_name='lt_x_width')
+            {'url_path':'/lt/lt_cache/resize/5/p/i.jpg', 'pattern_name':'lt_slash_sep'},
+            {'url_path':'/lt/lt_cache/resize/5/q80/p/i.jpg', 'pattern_name':'lt_slash_sep_w_quality'},
+            {'url_path':'/lt/lt_cache/resize/5/5/p/i.jpg', 'pattern_name':'lt_slash_sep'},
+            {'url_path':'/lt/lt_cache/resize/5/5/q80/p/i.jpg', 'pattern_name':'lt_slash_sep_w_quality'},
+            {'url_path':'/lt/lt_cache/resize/5x5/p/i.jpg', 'pattern_name':'lt_x_sep'},
+            {'url_path':'/lt/lt_cache/resize/5x5/q80/p/i.jpg', 'pattern_name':'lt_x_sep_w_quality'},
+            {'url_path':'/lt/lt_cache/resize/x/5/p/i.jpg', 'pattern_name':'lt_x_width'},
+            {'url_path':'/lt/lt_cache/resize/x/5/q80/p/i.jpg', 'pattern_name':'lt_x_width_w_quality'},
         )
 
     @patch('django.conf.settings')
@@ -529,4 +533,4 @@ class TestUrlMatching(TestCase):
         for path1, path2 in test_paths(self.routes_to_test):
             routes_tested += 1
             self.assertEqual(path1, path2)
-        self.assertEqual(routes_tested, 4)
+        self.assertEqual(routes_tested, 8)
